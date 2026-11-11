@@ -37,20 +37,23 @@ export function crealityProgress(url) {
     const socket = new WebSocket(url);
     const timer = setTimeout(() => finish(new Error('WebSocket timed out')), 5000);
     let settled = false;
-    let state;
+    let deviceState;
+    let jobState;
     let progress;
+    let jobStateTimer;
 
     function finish(error, value) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearTimeout(jobStateTimer);
       socket.close();
       if (error) reject(error);
       else resolve(value);
     }
 
     socket.addEventListener('open', () => {
-      socket.send(JSON.stringify({ method: 'get', params: { deviceState: 1, printProgress: 1 } }));
+      socket.send(JSON.stringify({ method: 'get', params: { deviceState: 1, printProgress: 1, state: 1 } }));
     });
     socket.addEventListener('error', () => finish(new Error('WebSocket connection failed')));
     socket.addEventListener('close', () => finish(new Error('WebSocket connection closed')));
@@ -61,18 +64,27 @@ export function crealityProgress(url) {
       }
       try {
         const update = JSON.parse(data);
-        if (update?.deviceState != null) state = String(update.deviceState);
+        if (update?.deviceState != null) deviceState = String(update.deviceState);
+        if (update?.state != null) jobState = String(update.state);
         if (update?.printProgress != null) progress = update.printProgress;
       } catch {
         return;
       }
+      if (deviceState === undefined || progress === undefined) return;
+      if (jobState !== undefined) finishReading();
+      else jobStateTimer ??= setTimeout(finishReading, 250);
+    });
+
+    function finishReading() {
       try {
-        if (state === undefined || progress === undefined) return;
         const value = percentage(progress);
-        finish(null, { progress: state === '0' && value < 100 ? 0 : value });
+        finish(null, {
+          progress: deviceState === '0' && value < 100 ? 0 : value,
+          complete: jobState === undefined ? undefined : jobState === '2',
+        });
       } catch (error) {
         finish(error);
       }
-    });
+    }
   });
 }

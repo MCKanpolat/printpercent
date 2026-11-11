@@ -10,7 +10,7 @@ PrintPercent reads print progress over your local network and publishes accessor
 
 Apple Home uses a **dimmable light** for print progress. A brightness reading of **65%** means the print is **65% complete**. The dimmer gives each printer an accessory card in Apple Home. Its controls have no effect on the printer.
 
-Moonraker printers also get a **Print Complete** contact sensor. Apple Home can trigger an automation when this sensor opens. The sensor opens when Moonraker reports a successful completion and closes when a new job starts. A displayed percentage can round up to 100% during a print, so completion uses the printer's job state. The Creality WebSocket adapter provides progress only. Use Moonraker where available for completion automations.
+Moonraker and Creality printers that report job state also get a **Print Complete** contact sensor. Apple Home can trigger an automation when this sensor opens. The sensor opens when the printer reports a successful completion and closes when a new job starts. A displayed percentage can round up to 100% during a print, so completion uses the printer's job state. Creality firmware that omits the WebSocket `state` field still provides progress.
 
 The bridge waits 10 seconds between polling cycles and marks registered accessories offline if the printer stops providing usable data.
 

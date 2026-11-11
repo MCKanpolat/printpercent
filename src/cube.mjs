@@ -12,16 +12,13 @@ export function printerEndpoints(printer, reading) {
       power: { powerState: progress > 0 ? 'on' : 'off' },
       brightness: { brightness: progress },
     },
+  }, {
+    id: `pp-complete-${printer.id}`,
+    name: `${printer.name.replace(/ print progress$/i, '')} Print Complete`,
+    category: 'contactSensor',
+    capabilities: ['contact'],
+    state: typeof reading?.complete === 'boolean' ? { contact: { contact: reading.complete } } : null,
   }];
-  if (printer.supportsCompletion) {
-    endpoints.push({
-      id: `pp-complete-${printer.id}`,
-      name: `${printer.name.replace(/ print progress$/i, '')} Print Complete`,
-      category: 'contactSensor',
-      capabilities: ['contact'],
-      state: reading && { contact: { contact: reading.complete } },
-    });
-  }
   return endpoints;
 }
 

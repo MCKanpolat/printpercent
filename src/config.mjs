@@ -74,7 +74,6 @@ export function loadConfig(env) {
     return {
       id: `printerstatus-${entry.id}`,
       name: entry.name.trim(),
-      supportsCompletion: type === 'moonraker',
       manufacturer: (typeof entry.manufacturer === 'string' && entry.manufacturer.trim()) || 'PrintPercent',
       model: (typeof entry.model === 'string' && entry.model.trim()) || 'Print Progress',
       read: type === 'moonraker' ? () => moonrakerProgress(url, apiKey) : () => crealityProgress(url),
