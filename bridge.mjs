@@ -33,12 +33,24 @@ async function main() {
       return;
     }
     const header = directive?.header;
-    if (header?.name !== 'QueryDeviceStates' || typeof header.message_id !== 'string') {
+    const isQuery = header?.name === 'QueryDeviceStates';
+    if ((!isQuery && header?.name !== 'UpdateDeviceStates') || typeof header.message_id !== 'string') {
       response.writeHead(403).end();
       return;
     }
     const state = endpointStates.get(directive.endpoint?.third_serial_number) ??
       endpointStates.get(directive.endpoint?.serial_number);
+    if (!isQuery) {
+      // Progress lights are read-only: acknowledge the command, ignore it, and let the
+      // next sync push the real printer state back so Apple Home stops showing a spinner.
+      response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+        event: {
+          header: { name: state ? 'Response' : 'ErrorResponse', message_id: header.message_id, version: '2' },
+          payload: state ? { state } : { type: 'ENDPOINT_UNREACHABLE' },
+        },
+      }));
+      return;
+    }
     response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({
       event: {
         header: {
