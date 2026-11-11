@@ -15,13 +15,13 @@ function legacyPrinters(env) {
   const printers = [];
   if (env.K1C_WS_URL) {
     printers.push({
-      id: 'k1c', name: 'K1C Baskı İlerlemesi', type: 'creality',
+      id: 'k1c', name: 'Creality K1C Print Progress', type: 'creality',
       manufacturer: 'Creality', model: 'K1C', url: env.K1C_WS_URL,
     });
   }
   if (env.U1_URL) {
     printers.push({
-      id: 'u1', name: 'U1 Baskı İlerlemesi', type: 'moonraker',
+      id: 'u1', name: 'Snapmaker U1 Print Progress', type: 'moonraker',
       manufacturer: 'Snapmaker', model: 'U1', url: env.U1_URL, apiKeyEnv: env.U1_API_KEY ? 'U1_API_KEY' : undefined,
     });
   }
@@ -74,6 +74,7 @@ export function loadConfig(env) {
     return {
       id: `printerstatus-${entry.id}`,
       name: entry.name.trim(),
+      supportsCompletion: type === 'moonraker',
       manufacturer: (typeof entry.manufacturer === 'string' && entry.manufacturer.trim()) || 'PrintPercent',
       model: (typeof entry.model === 'string' && entry.model.trim()) || 'Print Progress',
       read: type === 'moonraker' ? () => moonrakerProgress(url, apiKey) : () => crealityProgress(url),

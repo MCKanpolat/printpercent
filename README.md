@@ -2,13 +2,17 @@
 
 Monitor Klipper-based 3D printer progress in Apple Home via SONOFF iHost.
 
-PrintPercent reads print progress over your local network and publishes one read-only sensor per printer to eWeLink CUBE. It can run as a Docker add-on directly on a SONOFF iHost.
+PrintPercent reads print progress over your local network and publishes accessories to eWeLink CUBE. It can run as a Docker add-on directly on a SONOFF iHost.
 
 ## How it works
 
 ![PrintPercent data flow from Klipper and Creality LAN printers through iHost to Apple Home](docs/architecture.svg)
 
-Apple Home displays progress through a read-only humidity sensor. A reading of **65% humidity** means the print is **65% complete**. The bridge waits 10 seconds between polling cycles and marks a registered sensor offline if the printer stops providing usable data.
+Apple Home uses a **dimmable light** for print progress. A brightness reading of **65%** means the print is **65% complete**. The dimmer gives each printer an accessory card in Apple Home. Its controls have no effect on the printer.
+
+Moonraker printers also get a **Print Complete** contact sensor. Apple Home can trigger an automation when this sensor opens. The sensor opens when Moonraker reports a successful completion and closes when a new job starts. A displayed percentage can round up to 100% during a print, so completion uses the printer's job state. The Creality WebSocket adapter provides progress only. Use Moonraker where available for completion automations.
+
+The bridge waits 10 seconds between polling cycles and marks registered accessories offline if the printer stops providing usable data.
 
 ## Printer compatibility
 
@@ -23,7 +27,7 @@ PrintPercent supports any Klipper printer that exposes the required [Moonraker p
 | [Snapmaker U1](https://github.com/Snapmaker/u1-moonraker) | `moonraker` | Use `http://PRINTER_IP:7125`. Set a Moonraker API key if required. |
 | [Creality K1C with Creality LAN](https://github.com/heydemoura/creality-orca-integration/blob/main/docs/protocol.md) | `creality` | Use `ws://PRINTER_IP:9999/` if the firmware exposes `deviceState` and `printProgress` over WebSocket. If the printer exposes standard Moonraker, use the Moonraker adapter. |
 
-The model entries are setup examples. Adapter behavior was checked with simulated API responses. Real-printer testing and export of virtual sensors through iHost Matter Bridge are pending.
+The model entries are setup examples. Snapmaker U1 progress has been verified against a live printer on SONOFF iHost.
 
 ## Requirements
 
@@ -54,7 +58,7 @@ Invoke-RestMethod $tokenUrl -ContentType 'application/json'
    | `SERVICE_URL` | `http://192.168.1.10:8787/ihost`, using the iHost LAN address |
    | `PRINTERS_JSON` | JSON array of printer connections |
 
-3. Start the add-on and check its logs for progress readings. Each sensor appears in iHost after its first successful printer reading.
+3. Start the add-on and check its logs for progress readings. The accessories appear in iHost after the first successful printer reading.
 
 ## Configure printers
 
@@ -71,15 +75,19 @@ Paste the JSON array as one line into the iHost environment variable field. In a
 ```
 
 - `id` must be unique and use lowercase letters, digits, or hyphens. Keep it stable to retain the same registered sensor.
-- `name` is the sensor name at registration. `manufacturer` and `model` are optional.
+- `name` is the progress accessory name at registration. The completion accessory uses the same name with a `Print Complete` suffix in place of `Print Progress`. `manufacturer` and `model` are optional.
 - `type` defaults to `moonraker`. Use `creality` for the vendor WebSocket protocol.
 - `apiKeyEnv` is optional. When set, create the named environment variable with the Moonraker API key. Remove `apiKeyEnv` from the example if your Moonraker server allows access without a key.
 
-Existing deployments can keep `K1C_WS_URL`, `U1_URL`, and optional `U1_API_KEY`. When migrating to `PRINTERS_JSON`, reuse the IDs `k1c` and `u1` to retain their existing iHost sensors.
+Existing deployments can keep `K1C_WS_URL`, `U1_URL`, and optional `U1_API_KEY`. When moving those printers to `PRINTERS_JSON`, reuse the IDs `k1c` and `u1` to preserve their accessory identities across configuration changes.
 
-## Add the sensors to Apple Home
+## Add the accessories to Apple Home
 
-Open **Matter Bridge** in iHost and check whether the printer sensors appear in the device list. Share them through your iHost bridge and look for the readings under **Climate** in Apple Home. During a print, compare the displayed percentage with the printer's own display. See the [eWeLink Apple Home guide](https://ewelink.org/docs/help-guide/apple-home-integration).
+Open **Matter Bridge → Device List** in iHost and share the new accessories. In Apple Home, open the progress light to read its brightness. To create a completion automation, choose **Add Automation → A Sensor Detects Something**, select **Print Complete**, and choose **Opens**. [eWeLink Apple Home guide](https://ewelink.org/docs/help-guide/apple-home-integration) · [Apple automation guide](https://support.apple.com/102313)
+
+### Upgrade from a humidity sensor
+
+Update the add-on in iHost and keep its existing environment variables. The dimmer and completion sensor register as new accessories because Matter uses a different device type for each. After both appear, remove the old humidity sensor from iHost. Set up completion automations on the new contact sensor.
 
 ## Run on a computer
 

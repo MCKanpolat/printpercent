@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { loadConfig } from './src/config.mjs';
-import { cubeClient } from './src/cube.mjs';
+import { cubeClient, printerEndpoints } from './src/cube.mjs';
 
 async function main() {
   const { ihost, service, token, printers } = loadConfig(process.env);
@@ -34,21 +34,25 @@ async function main() {
       ]);
       for (const [index, reading] of readings.entries()) {
         const printer = printers[index];
-        const progress = reading.status === 'fulfilled' ? reading.value : null;
-        if (lastRead.get(printer.id) !== progress) {
-          console.log(`${printer.name}: ${progress === null ? reading.reason.message : `${progress}%`}`);
-          lastRead.set(printer.id, progress);
+        const status = reading.status === 'fulfilled' ? reading.value : null;
+        const message = status ? `${status.progress}%${status.complete ? ' (complete)' : ''}` : reading.reason.message;
+        if (lastRead.get(printer.id) !== message) {
+          console.log(`${printer.name}: ${message}`);
+          lastRead.set(printer.id, message);
         }
       }
       if (devices.status === 'fulfilled') {
-        await Promise.all(printers.map(async (printer) => {
-          const device = devices.value.find((item) => item.third_serial_number === printer.id);
-          try {
-            await cube.sync(printer, device, lastRead.get(printer.id));
-          } catch (error) {
-            console.error(`${printer.name}: ${error.message}`);
+        const registered = new Map(devices.value.map((device) => [device.third_serial_number, device]));
+        for (const [index, printer] of printers.entries()) {
+          const reading = readings[index];
+          for (const accessory of printerEndpoints(printer, reading.status === 'fulfilled' ? reading.value : null)) {
+            try {
+              await cube.sync(printer, accessory, registered.get(accessory.id));
+            } catch (error) {
+              console.error(`${accessory.name}: ${error.message}`);
+            }
           }
-        }));
+        }
       } else {
         console.error(`iHost: ${devices.reason.message}`);
       }

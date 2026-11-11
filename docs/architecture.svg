@@ -31,7 +31,7 @@
       <text x="132" y="98">Moonraker HTTP</text>
       <text x="132" y="208">Creality WebSocket</text>
       <text x="658" y="151">iHost Matter Bridge</text>
-      <text x="869" y="151">Climate · 65%</text>
+      <text x="869" y="151">Progress · Complete</text>
     </g>
     <text x="411" y="130" fill="#fff" font-size="19" font-weight="700">PrintPercent</text>
     <text x="411" y="151" fill="#dcecff" font-size="13">Runs on iHost Docker</text>

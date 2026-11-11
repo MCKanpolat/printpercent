@@ -3,7 +3,7 @@ import { json } from './http.mjs';
 function percentage(value, scale = 1) {
   if (typeof value === 'string' && value.trim()) value = Number(value);
   if (!Number.isFinite(value) || value < 0 || value > 100 / scale) {
-    throw new Error('Geçerli baskı yüzdesi alınamadı');
+    throw new Error('Invalid print progress');
   }
   return Math.round(value * scale);
 }
@@ -16,23 +16,26 @@ export async function moonrakerProgress(base, key) {
   const status = body.result?.status;
   switch (status?.print_stats?.state) {
     case 'complete':
-      return 100;
+      return { progress: 100, complete: true };
     case 'standby':
     case 'cancelled':
-      return 0;
+      return { progress: 0, complete: false };
     case 'printing':
     case 'paused':
     case 'error':
-      return percentage(status.display_status?.progress ?? status.virtual_sdcard?.progress, 100);
+      return {
+        progress: percentage(status.display_status?.progress ?? status.virtual_sdcard?.progress, 100),
+        complete: false,
+      };
     default:
-      throw new Error('Moonraker baskı durumu alınamadı');
+      throw new Error('Could not read Moonraker print status');
   }
 }
 
 export function crealityProgress(url) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url);
-    const timer = setTimeout(() => finish(new Error('WebSocket zaman aşımı')), 5000);
+    const timer = setTimeout(() => finish(new Error('WebSocket timed out')), 5000);
     let settled = false;
     let state;
     let progress;
@@ -49,8 +52,8 @@ export function crealityProgress(url) {
     socket.addEventListener('open', () => {
       socket.send(JSON.stringify({ method: 'get', params: { deviceState: 1, printProgress: 1 } }));
     });
-    socket.addEventListener('error', () => finish(new Error('WebSocket bağlantı hatası')));
-    socket.addEventListener('close', () => finish(new Error('WebSocket bağlantısı kapandı')));
+    socket.addEventListener('error', () => finish(new Error('WebSocket connection failed')));
+    socket.addEventListener('close', () => finish(new Error('WebSocket connection closed')));
     socket.addEventListener('message', ({ data }) => {
       if (data === 'heart_beat') {
         if (socket.readyState === WebSocket.OPEN) socket.send('ok');
@@ -66,7 +69,7 @@ export function crealityProgress(url) {
       try {
         if (state === undefined || progress === undefined) return;
         const value = percentage(progress);
-        finish(null, state === '0' && value < 100 ? 0 : value);
+        finish(null, { progress: state === '0' && value < 100 ? 0 : value });
       } catch (error) {
         finish(error);
       }

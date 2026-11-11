@@ -1,7 +1,29 @@
 import { randomUUID } from 'node:crypto';
 import { json } from './http.mjs';
 
-const humidity = (progress) => ({ humidity: { humidity: progress } });
+export function printerEndpoints(printer, reading) {
+  const progress = reading?.progress;
+  const endpoints = [{
+    id: `pp-progress-${printer.id}`,
+    name: printer.name,
+    category: 'light',
+    capabilities: ['power', 'brightness'],
+    state: reading && {
+      power: { powerState: progress > 0 ? 'on' : 'off' },
+      brightness: { brightness: progress },
+    },
+  }];
+  if (printer.supportsCompletion) {
+    endpoints.push({
+      id: `pp-complete-${printer.id}`,
+      name: `${printer.name.replace(/ print progress$/i, '')} Print Complete`,
+      category: 'contactSensor',
+      capabilities: ['contact'],
+      state: reading && { contact: { contact: !reading.complete } },
+    });
+  }
+  return endpoints;
+}
 
 export function cubeClient(base, token, serviceAddress) {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -29,29 +51,32 @@ export function cubeClient(base, token, serviceAddress) {
       }
       return body.data.device_list;
     },
-    async sync(printer, device, progress) {
-      const online = progress !== null;
+    async sync(printer, accessory, device) {
+      const online = accessory.state !== null;
       if (!device) {
         if (!online) return;
         await event('DiscoveryRequest', {
           endpoints: [{
-            third_serial_number: printer.id,
-            name: `${printer.name}`,
-            display_category: 'humiditySensor',
-            capabilities: [{ capability: 'humidity', permission: '0100' }],
-            state: humidity(progress),
+            third_serial_number: accessory.id,
+            name: accessory.name,
+            display_category: accessory.category,
+            capabilities: accessory.capabilities.map((capability) => ({
+              capability, permission: accessory.category === 'light' ? '1100' : '0100',
+            })),
+            state: accessory.state,
             manufacturer: printer.manufacturer,
             model: printer.model,
-            firmware_version: '1.0.0',
+            firmware_version: '1.1.0',
             service_address: serviceAddress,
           }],
         });
         return;
       }
 
-      const endpoint = { serial_number: device.serial_number, third_serial_number: printer.id };
-      if (online && device.state?.humidity?.humidity !== progress) {
-        await event('DeviceStatesChangeReport', { state: humidity(progress) }, endpoint);
+      const endpoint = { serial_number: device.serial_number, third_serial_number: accessory.id };
+      if (online && Object.entries(accessory.state).some(([capability, fields]) =>
+        Object.entries(fields).some(([key, value]) => device.state?.[capability]?.[key] !== value))) {
+        await event('DeviceStatesChangeReport', { state: accessory.state }, endpoint);
       }
       if (device.online !== online) {
         await event('DeviceOnlineChangeReport', { online }, endpoint);
