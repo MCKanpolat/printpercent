@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="272" viewBox="0 0 960 272" role="img" aria-labelledby="title desc">
+  <title id="title">PrintPercent data flow</title>
+  <desc id="desc">Moonraker and Creality LAN send printer progress to PrintPercent, which publishes it to iHost and Apple Home.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#526783"/>
+    </marker>
+  </defs>
+  <rect width="960" height="272" rx="22" fill="#f2f6fc"/>
+  <g fill="none" stroke="#526783" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M239 81H260Q276 81 276 97V121Q276 136 291 136H315"/>
+    <path d="M239 191H260Q276 191 276 175V151Q276 136 291 136H315"/>
+    <path d="M500 136H559"/>
+    <path d="M750 136H794"/>
+  </g>
+  <g fill="#fff" stroke="#c5d3e5">
+    <rect x="25" y="44" width="214" height="74" rx="12"/>
+    <rect x="25" y="154" width="214" height="74" rx="12"/>
+    <rect x="567" y="99" width="183" height="74" rx="12"/>
+    <rect x="802" y="99" width="134" height="74" rx="12"/>
+  </g>
+  <rect x="322" y="99" width="178" height="74" rx="12" fill="#164783"/>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <g fill="#102744" font-size="18" font-weight="700">
+      <text x="132" y="76">Klipper printers</text>
+      <text x="132" y="186">Creality LAN printers</text>
+      <text x="658" y="130">eWeLink CUBE</text>
+      <text x="869" y="130">Apple Home</text>
+    </g>
+    <g fill="#425977" font-size="13">
+      <text x="132" y="98">Moonraker HTTP</text>
+      <text x="132" y="208">Creality WebSocket</text>
+      <text x="658" y="151">iHost Matter Bridge</text>
+      <text x="869" y="151">Climate · 65%</text>
+    </g>
+    <text x="411" y="130" fill="#fff" font-size="19" font-weight="700">PrintPercent</text>
+    <text x="411" y="151" fill="#dcecff" font-size="13">Runs on iHost Docker</text>
+  </g>
+</svg>
