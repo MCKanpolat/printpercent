@@ -10,7 +10,7 @@ PrintPercent reads print progress over your local network and publishes accessor
 
 Apple Home uses a **dimmable light** for print progress. A brightness reading of **65%** means the print is **65% complete**. The dimmer gives each printer an accessory card in Apple Home. Its controls have no effect on the printer.
 
-Moonraker and Creality printers that report job state also get a **Print Complete** contact sensor. Apple Home can trigger an automation when this sensor opens. The sensor opens when the printer reports a successful completion and closes when a new job starts. A displayed percentage can round up to 100% during a print, so completion uses the printer's job state. Creality firmware that omits the WebSocket `state` field still provides progress.
+Each printer also gets a contact sensor (the accessory is still named **Print Complete**). It is **Open** while a print is running or paused and **Closed** when the printer is idle, finished, cancelled or in error. Apple Home can trigger an automation when it opens (print started) or closes (print ended, including cancelled).
 
 The bridge waits 10 seconds between polling cycles and marks registered accessories offline if the printer stops providing usable data.
 
@@ -85,7 +85,7 @@ Existing deployments can keep `K1C_WS_URL`, `U1_URL`, and optional `U1_API_KEY`.
 
 ## Add the accessories to Apple Home
 
-Open **Matter Bridge → Device List** in iHost and share the new accessories. In Apple Home, open the progress light to read its brightness. To create a completion automation, choose **Add Automation → A Sensor Detects Something**, select **Print Complete**, and choose **Opens**. [eWeLink Apple Home guide](https://ewelink.org/docs/help-guide/apple-home-integration) · [Apple automation guide](https://support.apple.com/102313)
+Open **Matter Bridge → Device List** in iHost and share the new accessories. In Apple Home, open the progress light to read its brightness. To create a print-end automation, choose **Add Automation → A Sensor Detects Something**, select **Print Complete**, and choose **Closes**. [eWeLink Apple Home guide](https://ewelink.org/docs/help-guide/apple-home-integration) · [Apple automation guide](https://support.apple.com/102313)
 
 ### Upgrade from a humidity sensor
 

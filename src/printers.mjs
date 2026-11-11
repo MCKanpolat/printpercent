@@ -22,7 +22,7 @@ export function moonrakerReader(base, key) {
     const { state, filename } = status?.print_stats ?? {};
     if (state === 'complete' || state === 'standby' || state === 'cancelled') {
       cachedFile = undefined;
-      return { progress: state === 'complete' ? 100 : 0, complete: state === 'complete' };
+      return { progress: state === 'complete' ? 100 : 0, printing: false };
     }
     if (state !== 'printing' && state !== 'paused' && state !== 'error') {
       throw new Error('Could not read Moonraker print status');
@@ -53,7 +53,7 @@ export function moonrakerReader(base, key) {
     if (!Number.isFinite(progress) || progress < 0 || progress > 1) {
       throw new Error('Invalid print progress');
     }
-    return { progress: Math.floor(progress * 100), complete: false };
+    return { progress: Math.floor(progress * 100), printing: state !== 'error' };
   };
 }
 
@@ -105,7 +105,7 @@ export function crealityProgress(url) {
         const value = percentage(progress);
         finish(null, {
           progress: deviceState === '0' && value < 100 ? 0 : value,
-          complete: jobState === undefined ? undefined : jobState === '2',
+          printing: deviceState !== '0',
         });
       } catch (error) {
         finish(error);

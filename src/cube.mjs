@@ -17,7 +17,7 @@ export function printerEndpoints(printer, reading) {
     name: `${printer.name.replace(/ print progress$/i, '')} Print Complete`,
     category: 'contactSensor',
     capabilities: ['contact'],
-    state: typeof reading?.complete === 'boolean' ? { contact: { contact: reading.complete } } : null,
+    state: typeof reading?.printing === 'boolean' ? { contact: { contact: reading.printing } } : null,
   }];
   return endpoints;
 }

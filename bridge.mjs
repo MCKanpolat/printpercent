@@ -81,7 +81,7 @@ async function main() {
       for (const [index, reading] of readings.entries()) {
         const printer = printers[index];
         const status = reading.status === 'fulfilled' ? reading.value : null;
-        const message = status ? `${status.progress}%${status.complete ? ' (complete)' : ''}` : reading.reason.message;
+        const message = status ? `${status.progress}%${status.printing ? ' (printing)' : ''}` : reading.reason.message;
         if (lastRead.get(printer.id) !== message) {
           console.log(`${printer.name}: ${message}`);
           lastRead.set(printer.id, message);
