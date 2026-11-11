@@ -44,7 +44,7 @@ Invoke-RestMethod $tokenUrl -ContentType 'application/json'
 
 ## Run on SONOFF iHost
 
-1. In the iHost web console, go to **Docker → Add add-on** and install the published `<dockerhub-user>/printpercent` image. iHost pulls the `latest` tag. The publisher's first Docker Hub release is pending. See [Publish the Docker image](#publish-the-docker-image) for maintainer setup. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
+1. Once the first image is published, go to **Docker → Add add-on** in the iHost web console and install [`mckanpolat/printpercent`](https://hub.docker.com/r/mckanpolat/printpercent). iHost pulls the `latest` tag. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
 2. In the **Run** dialog, select **Host** networking and set the following environment variables. Replace the example addresses with your own.
 
    | Variable | Example or purpose |
@@ -108,4 +108,4 @@ The entry point is `bridge.mjs`. Configuration, printer adapters, the CUBE clien
 
 Create a public Docker Hub repository named `printpercent`. In this GitHub repository's **Settings → Secrets and variables → Actions**, set the `DOCKERHUB_USERNAME` repository variable and the `DOCKERHUB_TOKEN` repository secret. The token needs permission to push to the Docker Hub repository.
 
-Run **Actions → Publish Docker image → Run workflow** on `main`. The workflow builds the `linux/arm/v7` image, pushes `<dockerhub-user>/printpercent:latest`, and reports the full image name. Add that image name to the installation instructions when the first publish succeeds.
+Run **Actions → Publish Docker image → Run workflow** on `main`. The workflow builds the `linux/arm/v7` image, pushes `mckanpolat/printpercent:latest`, and reports the full image name.
