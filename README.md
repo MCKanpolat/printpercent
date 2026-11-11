@@ -44,7 +44,7 @@ Invoke-RestMethod $tokenUrl -ContentType 'application/json'
 
 ## Run on SONOFF iHost
 
-1. Once the first image is published, go to **Docker → Add add-on** in the iHost web console and install [`mckanpolat/printpercent`](https://hub.docker.com/r/mckanpolat/printpercent). iHost pulls the `latest` tag. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
+1. Go to **Docker → Add add-on** in the iHost web console and install [`mckanpolat/printpercent`](https://hub.docker.com/r/mckanpolat/printpercent). iHost pulls the public ARMv7 image tagged `latest`. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
 2. In the **Run** dialog, select **Host** networking and set the following environment variables. Replace the example addresses with your own.
 
    | Variable | Example or purpose |
