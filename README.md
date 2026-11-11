@@ -29,7 +29,7 @@ The model entries are setup examples. Adapter behavior was checked with simulate
 
 - SONOFF iHost running eWeLink CUBE with Open API v2 and Matter Bridge enabled.
 - At least one compatible printer reachable from the bridge on the local network.
-- Docker with Buildx and a container registry account to publish your iHost image. Node.js 22 or newer is sufficient for running the bridge directly on a computer.
+- Node.js 22 or newer for running the bridge directly on a computer.
 
 ## Get an iHost access token
 
@@ -44,17 +44,8 @@ Invoke-RestMethod $tokenUrl -ContentType 'application/json'
 
 ## Run on SONOFF iHost
 
-1. Clone this repository and build an ARMv7 image. Replace `YOUR_DOCKERHUB_USER` with your Docker Hub username.
-
-   ```sh
-   git clone https://github.com/MCKanpolat/printpercent.git
-   cd printpercent
-   docker login
-   docker buildx build --platform linux/arm/v7 --provenance=false --sbom=false --tag YOUR_DOCKERHUB_USER/printpercent:latest --push .
-   ```
-
-2. In the iHost web console, go to **Docker → Add add-on**, add `YOUR_DOCKERHUB_USER/printpercent`, and install it. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
-3. In the **Run** dialog, select **Host** networking and set the following environment variables. Replace the example addresses with your own.
+1. In the iHost web console, go to **Docker → Add add-on** and install the published `<dockerhub-user>/printpercent` image. iHost pulls the `latest` tag. The publisher's first Docker Hub release is pending. See [Publish the Docker image](#publish-the-docker-image) for maintainer setup. If iHost asks for a TF card, follow the [eWeLink add-on setup guide](https://ewelink.cc/ewelink-cube/add-on/).
+2. In the **Run** dialog, select **Host** networking and set the following environment variables. Replace the example addresses with your own.
 
    | Variable | Example or purpose |
    | --- | --- |
@@ -63,7 +54,7 @@ Invoke-RestMethod $tokenUrl -ContentType 'application/json'
    | `SERVICE_URL` | `http://192.168.1.10:8787/ihost`, using the iHost LAN address |
    | `PRINTERS_JSON` | JSON array of printer connections |
 
-4. Start the add-on and check its logs for progress readings. Each sensor appears in iHost after its first successful printer reading.
+3. Start the add-on and check its logs for progress readings. Each sensor appears in iHost after its first successful printer reading.
 
 ## Configure printers
 
@@ -112,3 +103,9 @@ With Docker Compose, use `docker compose up -d --build` and view the logs with `
 Open an issue or pull request for a reproducible bug or printer compatibility improvement. Include the printer model, firmware version, CUBE version, and relevant log lines. Remove API keys and access tokens from shared output.
 
 The entry point is `bridge.mjs`. Configuration, printer adapters, the CUBE client, and HTTP requests live in `src/`. The architecture graphic is in `docs/`.
+
+## Publish the Docker image
+
+Create a public Docker Hub repository named `printpercent`. In this GitHub repository's **Settings → Secrets and variables → Actions**, set the `DOCKERHUB_USERNAME` repository variable and the `DOCKERHUB_TOKEN` repository secret. The token needs permission to push to the Docker Hub repository.
+
+Run **Actions → Publish Docker image → Run workflow** on `main`. The workflow builds the `linux/arm/v7` image, pushes `<dockerhub-user>/printpercent:latest`, and reports the full image name. Add that image name to the installation instructions when the first publish succeeds.

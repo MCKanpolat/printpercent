@@ -1,0 +1,31 @@
+name: Publish Docker image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Publish ARMv7 image
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$DOCKERHUB_USERNAME" || -z "$DOCKERHUB_TOKEN" ]]; then
+            echo "::error::Set the DOCKERHUB_USERNAME variable and DOCKERHUB_TOKEN secret."
+            exit 1
+          fi
+          printf '%s\n' "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+          image="$DOCKERHUB_USERNAME/printpercent:latest"
+          docker buildx build --platform linux/arm/v7 --provenance=false --sbom=false \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$image" --push .
+          docker buildx imagetools inspect "$image"
+          printf 'Published `%s` for `linux/arm/v7`.\n' "$image" >> "$GITHUB_STEP_SUMMARY"
