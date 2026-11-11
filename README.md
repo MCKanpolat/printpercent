@@ -18,6 +18,8 @@ The bridge waits 10 seconds between polling cycles and marks registered accessor
 
 PrintPercent supports any Klipper printer that exposes the required [Moonraker printer objects](https://moonraker.readthedocs.io/en/latest/printer_objects/) over HTTP. Add one configuration entry per printer. Moonraker must return `print_stats.state` and either `display_status.progress` or `virtual_sdcard.progress` during a print.
 
+PrintPercent calculates Moonraker progress from the current file position and the G-code start and end offsets when Moonraker provides them. It falls back to `virtual_sdcard.progress`, then `display_status.progress`, and rounds down to a whole percent.
+
 | Example printer | Adapter | How to connect |
 | --- | --- | --- |
 | Any Klipper printer with Moonraker | `moonraker` | Use the LAN address of its Moonraker host, typically `http://PRINTER_IP:7125`. |

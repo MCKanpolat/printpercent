@@ -1,4 +1,4 @@
-import { crealityProgress, moonrakerProgress } from './printers.mjs';
+import { crealityProgress, moonrakerReader } from './printers.mjs';
 
 const http = ['http:', 'https:'];
 const websocket = ['ws:', 'wss:'];
@@ -76,7 +76,7 @@ export function loadConfig(env) {
       name: entry.name.trim(),
       manufacturer: (typeof entry.manufacturer === 'string' && entry.manufacturer.trim()) || 'PrintPercent',
       model: (typeof entry.model === 'string' && entry.model.trim()) || 'Print Progress',
-      read: type === 'moonraker' ? () => moonrakerProgress(url, apiKey) : () => crealityProgress(url),
+      read: type === 'moonraker' ? moonrakerReader(url, apiKey) : () => crealityProgress(url),
     };
   });
   return { ihost, service, token, printers };

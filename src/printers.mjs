@@ -8,28 +8,53 @@ function percentage(value, scale = 1) {
   return Math.round(value * scale);
 }
 
-export async function moonrakerProgress(base, key) {
-  const url = new URL(base);
-  url.pathname = `${url.pathname.replace(/\/$/, '')}/printer/objects/query`;
-  url.search = 'print_stats=state&display_status=progress&virtual_sdcard=progress';
-  const body = await json(url, { headers: key ? { 'X-Api-Key': key } : {} });
-  const status = body.result?.status;
-  switch (status?.print_stats?.state) {
-    case 'complete':
-      return { progress: 100, complete: true };
-    case 'standby':
-    case 'cancelled':
-      return { progress: 0, complete: false };
-    case 'printing':
-    case 'paused':
-    case 'error':
-      return {
-        progress: percentage(status.display_status?.progress ?? status.virtual_sdcard?.progress, 100),
-        complete: false,
-      };
-    default:
+export function moonrakerReader(base, key) {
+  const headers = key ? { 'X-Api-Key': key } : {};
+  const queryUrl = new URL(base);
+  const prefix = queryUrl.pathname.replace(/\/$/, '');
+  queryUrl.pathname = `${prefix}/printer/objects/query`;
+  queryUrl.search = 'print_stats=state,filename&display_status=progress&virtual_sdcard=progress,file_position';
+  let cachedFile;
+
+  return async function read() {
+    const body = await json(queryUrl, { headers });
+    const status = body.result?.status;
+    const { state, filename } = status?.print_stats ?? {};
+    if (state === 'complete' || state === 'standby' || state === 'cancelled') {
+      cachedFile = undefined;
+      return { progress: state === 'complete' ? 100 : 0, complete: state === 'complete' };
+    }
+    if (state !== 'printing' && state !== 'paused' && state !== 'error') {
       throw new Error('Could not read Moonraker print status');
-  }
+    }
+
+    const sd = status.virtual_sdcard;
+    if (filename && Number.isFinite(sd?.file_position) &&
+        (cachedFile?.name !== filename || Date.now() >= cachedFile.retryAt)) {
+      const metadataUrl = new URL(queryUrl);
+      metadataUrl.pathname = `${prefix}/server/files/metadata`;
+      metadataUrl.search = new URLSearchParams({ filename }).toString();
+      const metadata = await json(metadataUrl, { headers }).catch(() => null);
+      cachedFile = {
+        name: filename,
+        start: metadata?.result?.gcode_start_byte,
+        end: metadata?.result?.gcode_end_byte,
+        retryAt: metadata ? Infinity : Date.now() + 30000,
+      };
+    }
+
+    let progress = sd?.progress ?? status.display_status?.progress;
+    const file = cachedFile?.name === filename ? cachedFile : undefined;
+    const { start, end } = file ?? {};
+    if (Number.isFinite(start) && Number.isFinite(end) && end > start && Number.isFinite(sd?.file_position)) {
+      progress = Math.max(0, Math.min(1, (sd.file_position - start) / (end - start)));
+    }
+    if (typeof progress === 'string' && progress.trim()) progress = Number(progress);
+    if (!Number.isFinite(progress) || progress < 0 || progress > 1) {
+      throw new Error('Invalid print progress');
+    }
+    return { progress: Math.floor(progress * 100), complete: false };
+  };
 }
 
 export function crealityProgress(url) {
