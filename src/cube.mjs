@@ -19,7 +19,7 @@ export function printerEndpoints(printer, reading) {
       name: `${printer.name.replace(/ print progress$/i, '')} Print Complete`,
       category: 'contactSensor',
       capabilities: ['contact'],
-      state: reading && { contact: { contact: !reading.complete } },
+      state: reading && { contact: { contact: reading.complete } },
     });
   }
   return endpoints;
