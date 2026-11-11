@@ -8,13 +8,47 @@ import { cubeClient, printerEndpoints } from './src/cube.mjs';
 async function main() {
   const { ihost, service, token, printers } = loadConfig(process.env);
   const cube = cubeClient(ihost, token, service.href);
+  const endpointStates = new Map();
 
-  const server = createServer((request, response) => {
-    if (request.method === 'POST' && request.url === service.pathname) {
-      response.writeHead(403).end();
-    } else {
+  const server = createServer(async (request, response) => {
+    if (request.method !== 'POST' || request.url !== service.pathname) {
       response.writeHead(404).end();
+      return;
     }
+    let directive;
+    try {
+      const chunks = [];
+      let size = 0;
+      for await (const chunk of request) {
+        size += chunk.length;
+        if (size > 16384) {
+          response.writeHead(413).end();
+          return;
+        }
+        chunks.push(chunk);
+      }
+      ({ directive } = JSON.parse(Buffer.concat(chunks).toString('utf8')));
+    } catch {
+      response.writeHead(400).end();
+      return;
+    }
+    const header = directive?.header;
+    if (header?.name !== 'QueryDeviceStates' || typeof header.message_id !== 'string') {
+      response.writeHead(403).end();
+      return;
+    }
+    const state = endpointStates.get(directive.endpoint?.third_serial_number) ??
+      endpointStates.get(directive.endpoint?.serial_number);
+    response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+      event: {
+        header: {
+          name: state ? 'Response' : 'ErrorResponse',
+          message_id: header.message_id,
+          version: '2',
+        },
+        payload: state ? { state } : { type: 'ENDPOINT_UNREACHABLE' },
+      },
+    }));
   });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -41,22 +75,31 @@ async function main() {
           lastRead.set(printer.id, message);
         }
       }
-      if (devices.status === 'fulfilled') {
-        const registered = new Map(devices.value.map((device) => [device.third_serial_number, device]));
-        for (const [index, printer] of printers.entries()) {
-          const reading = readings[index];
-          for (const accessory of printerEndpoints(printer, reading.status === 'fulfilled' ? reading.value : null)) {
-            try {
-              await cube.sync(printer, accessory, registered.get(accessory.id));
-            } catch (error) {
+      const registered = new Map(devices.status === 'fulfilled'
+        ? devices.value.map((device) => [device.third_serial_number, device])
+        : []);
+      endpointStates.clear();
+      const syncs = [];
+      for (const [index, printer] of printers.entries()) {
+        const reading = readings[index];
+        for (const accessory of printerEndpoints(printer, reading.status === 'fulfilled' ? reading.value : null)) {
+          const device = registered.get(accessory.id);
+          if (accessory.state) {
+            endpointStates.set(accessory.id, accessory.state);
+            if (device?.serial_number) endpointStates.set(device.serial_number, accessory.state);
+          }
+          if (devices.status === 'fulfilled') {
+            syncs.push(cube.sync(printer, accessory, device).catch((error) => {
               console.error(`${accessory.name}: ${error.message}`);
-            }
+            }));
           }
         }
-      } else {
+      }
+      if (devices.status === 'rejected') {
         console.error(`iHost: ${devices.reason.message}`);
       }
-      await delay(10000, undefined, { signal: shutdown.signal }).catch((error) => {
+      await Promise.all(syncs);
+      await delay(3000, undefined, { signal: shutdown.signal }).catch((error) => {
         if (error.name !== 'AbortError') throw error;
       });
     }

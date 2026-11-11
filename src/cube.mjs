@@ -74,9 +74,12 @@ export function cubeClient(base, token, serviceAddress) {
       }
 
       const endpoint = { serial_number: device.serial_number, third_serial_number: accessory.id };
-      if (online && Object.entries(accessory.state).some(([capability, fields]) =>
-        Object.entries(fields).some(([key, value]) => device.state?.[capability]?.[key] !== value))) {
-        await event('DeviceStatesChangeReport', { state: accessory.state }, endpoint);
+      if (online) {
+        const state = Object.fromEntries(Object.entries(accessory.state).filter(([capability, fields]) =>
+          Object.entries(fields).some(([key, value]) => device.state?.[capability]?.[key] !== value)));
+        if (Object.keys(state).length) {
+          await event('DeviceStatesChangeReport', { state }, endpoint);
+        }
       }
       if (device.online !== online) {
         await event('DeviceOnlineChangeReport', { online }, endpoint);
